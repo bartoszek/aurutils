@@ -128,7 +128,7 @@ while true; do
         -d|--repo|--database) shift; repo=$1 ;;
         -D|--directory)       shift; build_args+=(-D "$1") ;;
         --bind)               shift; makechrootpkg_args+=(-D "$1") ;;
-        --bind-rw)               shift; makechrootpkg_args+=(-d "$1") ;;
+        --bind-rw)            shift; makechrootpkg_args+=(-d "$1") ;;
         --ignore)             shift; IFS=, read -a pkg -r <<< "$1"
                               pkg_i+=("${pkg[@]}") ;;
         --makepkg-conf)       shift; build_args+=(-M "$1") ;;
