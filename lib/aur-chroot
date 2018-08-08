@@ -92,6 +92,15 @@ makepkg_conf=${makepkg_conf-/usr/share/devtools/makepkg-$machine.conf}
 
 # CacheDir will be replaced by devtools (#416)
 pacman-conf | host_with_cache "${host_repo[@]}" >"$tmp"/custom.conf
+# parse the makepkg.conf for buildenv dependencies
+readonly makepkg_conf_buildenv_deps=$(
+    deps_array=()
+    source ${makepkg_conf}
+    source /usr/share/makepkg/util/option.sh;
+    check_buildenv "ccache" "y" && deps_array+=("ccache")
+    check_buildenv "distcc" "y" && deps_array+=("distcc")
+    echo ${deps_array[@]}
+)
 
 # bind mount all file:// paths to container (#461)
 while read -r key _ value; do
@@ -118,7 +127,7 @@ if ((prepare)); then
         fi
 
         sudo mkarchroot -C "$tmp"/pacman.conf -M "$makepkg_conf" \
-             "$directory"/root base-devel
+             "$directory"/root base-devel ${makepkg_conf_buildenv_deps[@]}
     fi
 fi
 
