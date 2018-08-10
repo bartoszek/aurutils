@@ -119,7 +119,8 @@ if ((prepare)); then
     if [[ -f $directory/root/.arch-chroot ]]; then
         # locking is done by systemd-nspawn
         sudo arch-nspawn -C "$tmp"/pacman.conf -M "$makepkg_conf" \
-             "$directory"/root "${bindmounts_ro[@]}" pacman -Syu --noconfirm
+             "$directory"/root "${bindmounts_ro[@]}" \
+              pacman -Syu --noconfirm ${makepkg_conf_buildenv_deps[@]}
     else
         # parent path is not created by mkarchroot (#371)
         if [[ ! -d $directory ]]; then
