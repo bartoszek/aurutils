@@ -55,6 +55,14 @@ Print target packages and their paths instead of building them.
 .BR \-s ", " \-\-sign
 Sign built packages and verify the database with gpg. (\fBaur build \-sv\fR)
 
+.TP
+.BR \-\-rebuild
+Alias for \-f \-\-nover\-shallow.
+
+.TP
+.BR \-\-rebuildtree ", " \-\-rebuild\-tree
+Alias for \-f \-\-nover.
+
 .SS Container options
 .TP
 .BR \-c ", " \-\-chroot
@@ -95,10 +103,6 @@ Do not view downloaded files before building.
 
 .SS Repository options
 .TP
-.B \-
-Read package names from standard input (newline-delimited, one per line).
-
-.TP
 .B \-\-list
 List repository contents in a tab-separated format.
 
@@ -108,13 +112,10 @@ Print all configured \fBfile://\fR repositories, together with their
 file paths.
 
 .TP
-.B \-\-provides
-Take virtual dependencies (\fBprovides\fR) in the local repository into
-account. Packages specified on the command line or available upgrades
-are considered regardless of this setting.
-
-Note: Ensure the local repository is propagated to \fBpacman\fR(8)
-before using this option, for example with \fBpacsync\fR(1).
+.BR \-\-noprovides ", " \-\-no\-provides
+Do not take virtual dependencies (\fBprovides\fR) in the local
+repository into account. Packages specified on the command line or
+available upgrades are considered regardless of this setting.
 
 .TP
 .B \-d \fINAME\fR ", " \-\-database=\fINAME\fR ", " \-\-repo=\fINAME\fR
@@ -132,7 +133,7 @@ value of the configured repository.
 Update all AUR packages in a local repository that are out-of-date.
 
 .SS makepkg
-The default set of options is \fBmakepkg \-cs\fR.
+The default set of options is \fBmakepkg \-crs\fR.
 
 .TP
 .BR \-A ", " \-\-ignorearch ", " \-\-ignore\-arch
@@ -149,8 +150,8 @@ Enable logging to a text file in the build directory. (\fBmakepkg
 Do not wait for user input. (\fBmakepkg \-\-noconfirm\fR)
 
 .TP
-.BR \-r ", " \-\-rmdeps
-Remove dependencies installed by makepkg. (\fBmakepkg \-r\fR)
+.BR \-k ", " \-\-keep
+Do not remove dependencies installed by makepkg.
 
 .SS makechrootpkg
 The default set of options is \fBmakechrootpkg \-cu\fR. For more information 
@@ -159,6 +160,10 @@ about building in containers, see \fBaur\-chroot\fR(1).
 .TP
 .B \-\-bind=\fIDIR\fR
 Bind a directory read-only. (\fBmakechrootpkg \-D\fR)
+
+.TP
+.B \-\-bind-rw=\fIDIR\fR
+Bind a directory read-write. (\fBmakechrootpkg \-d\fR)
 
 .TP
 .BR \-T ", " \-\-temp
@@ -188,11 +193,32 @@ split on white space, allowing \fIAUR_PAGER="program -option"\fR.
 
 .B AUR_REPO
 .RS
-The repository used for building packages. The entry must be a valid
+The repository used for building packages.
+If \fBAUR_DBROOT\fR is not specified, then the entry must be a valid
 \fBfile://\fR repository configured in \fBpacman.conf\fR(5).
 .RE
 
+.B AUR_DBROOT
+.RS
+The absolute path to the database corresponding to \fBAUR_REPO\fR.
+.RE
+
 .SH NOTES
+Targets may be taken from stdin using \fBxargs\fR(1). For example:
+
+.EX
+  $ aur vercmp-devel | xargs aur sync --noconfirm
+.EE
+
+Note that command output interferes with input from the tty. The
+\fB\-\-noconfirm\fR option may be used to disable interaction, or
+output redirected to a file:
+
+.EX
+  $ aur vercmp-devel > new.txt
+  $ xargs -a new.txt aur sync
+.EE
+
 When version checks are enabled (\fB\-\-no\-ver\fR is not specified),
 build files are only retrieved if the remote (RPC) version is newer
 than a version in the pacman database. Checks assume there are no

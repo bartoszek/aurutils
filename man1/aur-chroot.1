@@ -8,8 +8,8 @@ aur\-chroot \- build packages with systemd-nspawn
 .OP \-D directory
 .OP \-M makepkg_conf
 .OP \-C pacman_conf
-.OP \-B
-.OP \-P
+.OP \-\-nobuild
+.OP \-\-noprepare
 .OP \-\-
 .RI [ "makechrootpkg args" ]
 .YS
@@ -45,12 +45,12 @@ The makepkg.conf file to be used in the container. Defaults to
 \fImakepkg\-<machine>.conf\fR from devtools.
 
 .TP
-.B \-B
+.B \-\-nobuild
 Update or create the /root copy of the container; do not build a
 package.
 
 .TP
-.B \-P
+.B \-\-noprepare
 Build a package, to not update the container.
 
 .TP
@@ -80,6 +80,22 @@ Package conflicts inside the container must be solved manually, as
 For example, to replace \fIgcc\fR with \fIgcc\-multilib\fR, run
 \fBarch\-nspawn /var/lib/aurbuild/root pacman \-S gcc\-multilib\fR as
 root.
+
+.SS Using \fBccache\fR and \fBdistcc\fR
+As in the example above, install the required packages:
+.EX
+
+  # arch-nspawn /var/lib/aurbuild/root pacman \-S ccache distcc
+
+.EE
+Ensure write access to \fBccache\fR directories on the host:
+.EX
+
+  # aur chroot -- -d /home/_ccache:/build/.ccache -cu
+
+.EE
+Necessary \fBmakepkg\fR options may be set in a specified (\-M)
+\fImakepkg.conf\fR file. See GitHub issue #334 for details.
 
 .SS Building for a different architecture
 To build packages for a different architecture, prepend \fBsetarch

@@ -10,30 +10,16 @@ readonly PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 chroot_args=()
 gpg_args=(--detach-sign --no-armor --batch)
 makechrootpkg_args=(-cu)
-makepkg_args=(-rs --noconfirm)
+makepkg_args=(-crs)
 repo_add_args=()
 
 # default options
 chroot=0 no_sync=0 overwrite=0 sign_pkg=0
 
-build_failure() {
-    error "$argv0: failure on package $1"
-
-    mapfile -tu "$2" pkg_todo
-    printf >&2 'remaining packages: %s\n' "${pkg_todo[*]:-(none)}"
-
-    mapfile -tu "$3" pkg_done
-    printf >&2 'processed packages: %s\n' "${pkg_done[*]:-(none)}"
-
-    exit "$4"
-}
-
-conf_options() {
+conf_repo() {
     printf '[options]\n'
     pacconf --options --raw
-}
 
-conf_repo() {
     printf '[%s]\n' "$1"
     pacconf --repo="$1"
 }
@@ -42,13 +28,6 @@ db_replaces() {
     bsdcat "$1" | awk '/%REPLACES%/ {
         while(NF != 0) {getline; print}
     }'
-}
-
-find_pkg_dupes() {
-    # This function uses the extended --packagelist introduced with
-    # pacman 5.1. It assumes that PKGEXT does not change between
-    # invoking --packagelist and makepkg in the later build process.
-    makepkg --packagelist | xargs -I{} find "$1" -maxdepth 1 -name '{}'
 }
 
 print_quoted() {
@@ -118,7 +97,7 @@ else
     usage
 fi
 
-db_root=$(realpath -e -- "${db_root-$server}")
+db_root=$(realpath -e -- "${db_root-${AUR_DBROOT-$server}}")
 db_path=$(realpath -e -- "${db_root}/$database.db") # .db symbolic link to archive
 
 if ! [[ -r $db_path && -w $db_path ]]; then
@@ -131,9 +110,6 @@ if [[ -v queue ]]; then
 else
     exec {fd}< <(printf '\n')
 fi
-
-# keep track of processed packages (#264)
-exec {fd_done}> "$tmp"/queue_processed
 
 # reset default makechrootpkg arguments
 if (($#)); then
@@ -166,35 +142,36 @@ else
 fi
 
 if ((chroot)); then
-    aur chroot -B "${chroot_args[@]}"
+    aur chroot --nobuild "${chroot_args[@]}"
 else
-    (conf_options; conf_repo "$database") >"$tmp"/custom.conf
+    conf_repo "$database" >"$tmp"/custom.conf
 fi
 
 while IFS= read -ru "$fd" path; do
-    cd_safe "$path"
+    cd_safe "$startdir/$path"
 
     if ((!overwrite)); then
-        mapfile -t mark < <(find_pkg_dupes "$db_root")
+        unset mark
+
+        while IFS= read -r; do
+            [[ -f $REPLY ]] && mark+=("$REPLY")
+        done < <(PKGDEST="$db_root" makepkg --packagelist)
 
         if [[ ${mark[*]} ]]; then
-            warning "$argv0: skipping built package (use -f to overwrite)"
+            warning "skipping built package (use -f to overwrite)"
 
             print_quoted >&2 "${mark[@]}"
             continue
         fi
     fi
 
-    m_err=0
     if ((chroot)); then
-        PKGDEST="$var_tmp" aur chroot -P "${chroot_args[@]}" \
-            -- "${makechrootpkg_args[@]}" || m_err=$?
+        printf '%s\n' >&2 "Running makechrootpkg ${makechrootpkg_args[*]}"
+        PKGDEST="$var_tmp" aur chroot --noprepare "${chroot_args[@]}" \
+            -- "${makechrootpkg_args[@]}"
     else
-        PKGDEST="$var_tmp" makepkg "${makepkg_args[@]}" || m_err=$?
-    fi
-
-    if ((m_err)); then
-        build_failure "${path##*/}" "$fd" "$fd_done" "$m_err"
+        printf '%s\n' >&2 "Running makepkg ${makepkg_args[*]}"
+        PKGDEST="$var_tmp" makepkg "${makepkg_args[@]}"
     fi
 
     cd_safe "$var_tmp"
@@ -217,9 +194,6 @@ while IFS= read -ru "$fd" path; do
 
     cd_safe "$db_root"
     LANG=C repo-add "${repo_add_args[@]}" "$db_path" "${pkglist[@]}"
-
-    basename "$path" >&"$fd_done"
-    cd_safe "$startdir"
 
     if ((chroot)) || ((no_sync)); then
         continue

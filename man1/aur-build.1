@@ -74,7 +74,22 @@ environment variable can be set to the appopriate key identifier.
 Verify the PGP signature of the database before
 updating. (\fBrepo\-add \-v\fR).
 
+.SH ENVIRONMENT
+
+.B AUR_REPO
+.RS
+The repository used for building packages.
+If \fBAUR_DBROOT\fR is not specified, then the entry must be a valid
+\fBfile://\fR repository configured in \fBpacman.conf\fR(5).
+.RE
+
+.B AUR_DBROOT
+.RS
+The absolute path to the database corresponding to \fBAUR_REPO\fR.
+.RE
+
 .SH NOTES
+.SS Repository updates
 When building locally (outside a container), \fBpacman \-Syu\fR is run
 while restricted to a local repository. This is comparable to
 \fBmakepkg \-i\fR, but without subsequent package installation (if a
@@ -107,6 +122,11 @@ For example:
 .SY Note:
 If the rule should only apply to certain hosts, replace \fBALL\fR with 
 the respective \fIhostname\fR.
+
+.SS PKGBUILD signatures
+GPG signatures defined in the \fBvalidpgpkeys\fR array may be
+automatically retrieved by setting \fIkeyserver-options
+auto-key-retrieve\fR in \fBgpg.conf\fR. See \fBgpg\fR(1) for details.
 
 .SH SEE ALSO
 .BR aur (1),
