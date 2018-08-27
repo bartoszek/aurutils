@@ -70,8 +70,18 @@ if (($#)); then
     makechrootpkg_args=("$@")
 fi
 
+# detect multilib package
+readonly is_pacman_conf_multilib=$(
+    for pkg in $(source PKGBUILD 2>/dev/null; echo ${depends[@]})
+        do expac -S %r $pkg
+    done|grep -q multilib
+    echo $?
+)
+# set pacman_conf_default
+pacman_conf_default="/usr/share/devtools/pacman-$(((is_pacman_conf_multilib)) && echo "extra" || echo "multilib").conf"
+
 # baseline configuration
-readonly pacman_conf=${pacman_conf-/usr/share/devtools/pacman-extra.conf}
+readonly pacman_conf=${pacman_conf-${pacman_conf_default}}
 readonly makepkg_conf=${makepkg_conf-/usr/share/devtools/makepkg-$machine.conf}
 
 for repo in "${host_repo[@]}"; do
