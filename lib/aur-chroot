@@ -24,17 +24,13 @@ ignore_defaults() {
 }
 
 host_with_cache() {
-    awk 'BEGIN {
-        for (i = 0; i < ARGC; i++)
-            section["[" i "]"] = 1
-        ARGC=0
-    }
-    $1 ~ /^\[.+]$/ { p = 0 }
-    $1 in section  { p = 1 }
+    printf '[%s]\n' options
+    pacman-conf --verbose CacheDir
 
-    p == 1 || $1 == "[options]" || $1 == "CacheDir" {
-        print $0
-    }' "$@"
+    for r in "$@"; do
+	printf '[%s]\n' "$r"
+	pacman-conf --repo "$r"
+    done
 }
 
 trap_exit() {
@@ -91,7 +87,8 @@ pacman_conf=${pacman_conf-/usr/share/devtools/pacman-multilib.conf}
 makepkg_conf=${makepkg_conf-/usr/share/devtools/makepkg-$machine.conf}
 
 # CacheDir will be replaced by devtools (#416)
-pacman-conf | host_with_cache "${host_repo[@]}" >"$tmp"/custom.conf
+host_with_cache "${host_repo[@]}" >"$tmp"/custom.conf
+
 # parse the makepkg.conf for buildenv dependencies
 readonly makepkg_conf_buildenv_deps=$(
     deps_array=()
