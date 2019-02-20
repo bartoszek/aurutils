@@ -107,7 +107,7 @@ if (($#)); then
     fi
 fi
 
-if type -P xdelta3 >/dev/null && ((delta)); then
+if ((delta)); then
     repo_add_args+=(-d)
 fi
 

@@ -115,10 +115,11 @@ database
 
 .TP
 .B \-X ", " \-\-delta
-Automatically generate and add a delta file between the old entry and the new one
-if the old package file is found next to the new one.
-.RB ( "repo\-add \-d" ).
-
+Automatically generate and add a delta file between the old entry 
+and the new one, if the old package file is found next to the new one.
+.RB ( "repo\-add \-d" )
+requires:
+.BR xdelta3 (1).
 
 .TP
 .BR \-s ", " \-\-sign
