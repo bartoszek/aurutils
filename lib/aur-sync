@@ -205,9 +205,19 @@ tmp_view=$(mktemp -d --tmpdir "aurutils-$argv0-view.XXXXXXXX") || exit
 
 trap 'trap_exit' EXIT
 
+# Extract 'pkgname' from command-line.
+unset pkgname
+while true; do
+    case "$1" in
+        --) shift; break ;;
+        *) pkgname+=("$1"); shift ;;
+    esac
+done
+
 # Append remaining options to the aur-build command-line
 if (( $# )); then
     build_extra_args+=("$@")
+    shift $#
 fi
 
 # Append contents of ignore file
@@ -223,7 +233,7 @@ if (( rotate )); then
     fi
 fi
 
-if ! (( $# + update )); then
+if ! (( ${#pkgname[@]} + update )); then
     error '%s: no targets specified' "$argv0"
     exit 1
 fi
@@ -245,8 +255,8 @@ else
     exit 13
 fi
 
-{ if (( $# )); then
-      printf '%s\n' "$@"
+{ if [[ -v pkgname[@] ]] ; then
+      printf '%s\n' "${pkgname[@]}"
   fi
 
   if (( update )); then
