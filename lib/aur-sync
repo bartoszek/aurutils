@@ -209,7 +209,7 @@ trap 'trap_exit' EXIT
 unset pkgname
 while (( $# )); do
     case "$1" in
-        --) shift; break ;;
+        --*) break ;;
         *) pkgname+=("$1"); shift ;;
     esac
 done
